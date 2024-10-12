@@ -211,7 +211,7 @@ function extract_All(){
 
 function beginEnumeration(){
 
-	tput civis; nmap -p139 --open -T5 -v -n $host_ip | grep open > /dev/null 2>&1 && port_status=$?
+	tput civis; nmap -p135 --open -T5 -v -n $host_ip | grep open > /dev/null 2>&1 && port_status=$?
 	
 	if [ -z "$user" ]; then
 	    # Sin usuario ni contraseña, Null session
