@@ -129,8 +129,10 @@ function extract_DUsers(){
 
 	echo -e "\n${yellowColour}[*]${endColour}${grayColour} Enumerating Domain Users...${endColour}\n"
 	
-	echo "Running command: rpcclient "$rpcclient_auth" $1 -c \"enumdomusers\""
-	domain_users=$(rpcclient $rpcclient_auth $1 -c "enumdomusers" | grep -oP '\[.*?\]' | grep -v 0x | tr -d '[]')
+	#echo "Running command: rpcclient "$rpcclient_auth" $1 -c \"enumdomusers\""
+	
+	command="rpcclient $rpcclient_auth $1 -c \"enumdomusers\""
+	domain_users=$(eval $command | grep -oP '\[.*?\]' | grep -v 0x | tr -d '[]')
 
 	echo "Users" > $tmp_file && for user in $domain_users; do echo "$user" >> $tmp_file; done
 
@@ -145,8 +147,10 @@ function extract_DUsers_Info(){
 	echo -e "\n${yellowColour}[*]${endColour}${grayColour} Listing domain users with description...${endColour}\n"
 
 	for user in $domain_users; do
-		#rpcclient -U "" $1 -c "queryuser $user" -N | grep -E 'User Name|Description' | cut -d ':' -f 2-100 | sed 's/\t//' | tr '\n' ',' | sed 's/.$//' >> $tmp_file
-		rpcclient $rpcclient_auth $1 -c "queryuser $user" | grep -E 'User Name|Description' | cut -d ':' -f 2-100 | sed 's/\t//' | tr '\n' ',' | sed 's/.$//' >> $tmp_file
+	
+		command="rpcclient $rpcclient_auth $1 -c \"queryuser $user\""
+		eval $command | grep -E 'User Name|Description' | cut -d ':' -f 2-100 | sed 's/\t//' | tr '\n' ',' | sed 's/.$//' >> $tmp_file
+		
 		echo -e '\n' >> $tmp_file
 	done
 
@@ -166,14 +170,17 @@ function extract_DUsers_Info(){
 function extract_DAUsers(){
 
 	echo -e "\n${yellowColour}[*]${endColour}${grayColour} Enumerating Domain Admin Users...${endColour}\n"
-	#rid_dagroup=$(rpcclient -U "" $1 -c "enumdomgroups" -N | grep "Domain Admins" | awk 'NF{print $NF}' | grep -oP '\[.*?\]' | tr -d '[]')
-	rid_dagroup=$(rpcclient $rpcclient_auth $1 -c "enumdomgroups" | grep "Domain Admins" | awk 'NF{print $NF}' | grep -oP '\[.*?\]' | tr -d '[]')
-	#rid_dausers=$(rpcclient -U "" $1 -c "querygroupmem $rid_dagroup" -N | awk '{print $1}' | grep -oP '\[.*?\]' | tr -d '[]')
-	rid_dausers=$(rpcclient $rpcclient_auth $1 -c "querygroupmem $rid_dagroup" | awk '{print $1}' | grep -oP '\[.*?\]' | tr -d '[]')
+	
+	command1="rpcclient $rpcclient_auth $1 -c \"enumdomgroups\""
+	rid_dagroup=$(eval $command1 | grep "Domain Admins" | awk 'NF{print $NF}' | grep -oP '\[.*?\]' | tr -d '[]')
+	
+	command2="rpcclient $rpcclient_auth $1 -c \"querygroupmem $rid_dagroup\""
+	rid_dausers=$(eval $command2 | awk '{print $1}' | grep -oP '\[.*?\]' | tr -d '[]')
 
 	echo "DomainAdminUsers" > $tmp_file; for da_user_rid in $rid_dausers; do
-		#rpcclient -U "" $1 -c "queryuser $da_user_rid" -N | grep 'User Name'| awk 'NF{print $NF}' >> $tmp_file
-		rpcclient $rpcclient_auth $1 -c "queryuser $da_user_rid" | grep 'User Name'| awk 'NF{print $NF}' >> $tmp_file
+	
+		command3="rpcclient $rpcclient_auth $1 -c \"queryuser $da_user_rid\""
+		$(eval $command3 | grep 'User Name'| awk 'NF{print $NF}' >> $tmp_file)
 	done
 
 	echo -ne "${blueColour}"; printTable ' ' "$(cat $tmp_file)"; echo -ne "${endColour}"
@@ -184,13 +191,14 @@ function extract_DGroups(){
 
 	echo -e "\n${yellowColour}[*]${endColour}${grayColour} Enumerating Domain Groups...${endColour}\n"
 
-	#rpcclient -U "" $host_ip -c "enumdomgroups" -N | grep -oP '\[.*?\]' | grep "0x" | tr -d '[]' >> $tmp_file
-	rpcclient $rpcclient_auth $host_ip -c "enumdomgroups" | grep -oP '\[.*?\]' | grep "0x" | tr -d '[]' >> $tmp_file
+	command="rpcclient $rpcclient_auth $host_ip -c \"enumdomgroups\""
+	$(eval $command | grep -oP '\[.*?\]' | grep "0x" | tr -d '[]' >> $tmp_file)
 
 	echo "DomainGroup,Description" > $tmp_file2
 	cat $tmp_file | while read rid_domain_groups; do
-		#rpcclient -U "" $host_ip -c "querygroup $rid_domain_groups" -N | grep -E 'Group Name|Description' | sed 's/\t//' > $tmp_file3
-		rpcclient $rpcclient_auth $host_ip -c "querygroup $rid_domain_groups" | grep -E 'Group Name|Description' | sed 's/\t//' > $tmp_file3
+	
+		command2="rpcclient $rpcclient_auth $host_ip -c \"querygroup $rid_domain_groups\""
+		$(eval $command2 | grep -E 'Group Name|Description' | sed 's/\t//' > $tmp_file3)
 		group_name=$(cat $tmp_file3 | grep "Group Name" | awk '{print $2}' FS=":")
 		group_description=$(cat $tmp_file3 | grep "Description" | awk '{print $2}' FS=":")
 
@@ -215,15 +223,17 @@ function beginEnumeration(){
 	
 	if [ -z "$user" ]; then
 	    # Sin usuario ni contraseña, Null session
-	    rpcclient_auth="-U '' -N"
+	    rpcclient_auth="-U \"\" -N"
   	else
 	    # Con usuario y contraseña
 	    rpcclient_auth="-U $user%$password"
   	fi
   	
-  	#echo "Using rpcclient authentication: $rpcclient_auth"
+  	echo "Using rpcclient authentication: $rpcclient_auth"
 	
-	rpcclient $rpcclient_auth $host_ip -c "enumdomusers" > /dev/null 2>&1
+	#rpcclient $rpcclient_auth $host_ip -c "enumdomusers" > /dev/null 2>&1
+	command="rpcclient $rpcclient_auth $host_ip -c \"enumdomusers\""
+	$(eval $command > /dev/null 2>&1)
 
 	if [ "$(echo $?)" == "0" ]; then
 		if [ "$port_status" == "0" ]; then
