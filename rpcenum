@@ -264,7 +264,7 @@ function beginEnumeration(){
 	    rpcclient_auth="-U \"\" -N"
   	else
 	    # Con usuario y contraseña
-	    rpcclient_auth="-U $user%$password"
+	    rpcclient_auth="-U '${user}%${password}'"
   	fi
   	
   	echo "Using rpcclient authentication: $rpcclient_auth"
