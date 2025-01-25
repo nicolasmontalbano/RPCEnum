@@ -257,7 +257,7 @@ function extract_All(){
 
 function beginEnumeration(){
 
-	tput civis; nmap -p135 --open -T5 -v -n $host_ip | grep open > /dev/null 2>&1 && port_status=$?
+	#tput civis; nmap -p135 --open -T5 -v -n $host_ip | grep open > /dev/null 2>&1 && port_status=$?
 	
 	if [ -z "$user" ]; then
 	    # Sin usuario ni contraseña, Null session
@@ -274,7 +274,7 @@ function beginEnumeration(){
 	#$(eval $command > /dev/null 2>&1)
 
 	#if [ "$(echo $?)" == "0" ]; then
-		if [ "$port_status" == "0" ]; then
+		#if [ "$port_status" == "0" ]; then
 			case $enum_mode in
 				DUsers)
 					extract_DUsers $host_ip
@@ -300,10 +300,10 @@ function beginEnumeration(){
 					exit 1
 					;;
 			esac
-		else
-			echo -e "\n${redColour}Port 135 seems to be closed on $host_ip${endColour}"
-			tput cnorm; exit 0
-		fi
+		#else
+		#	echo -e "\n${redColour}Port 135 seems to be closed on $host_ip${endColour}"
+		#	tput cnorm; exit 0
+		#fi
 	#else
 	#	echo -e "\n${redColour}[!] Error: Access Denied${endColour}"
 	#	tput cnorm; exit 0
